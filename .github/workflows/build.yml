@@ -1,0 +1,65 @@
+name: Build HlslDecompiler
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '.github/workflows/build.yml'
+  pull_request:
+    paths:
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.sln'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.x
+
+      - name: Restore dependencies
+        run: dotnet restore HlslDecompiler.sln
+
+      - name: Run tests
+        run: dotnet test HlslDecompiler.sln --configuration Release --no-restore --verbosity normal
+
+      - name: Publish Windows executable
+        run: >-
+          dotnet publish HlslDecompiler.csproj
+          --configuration Release
+          --no-restore
+          --runtime win-x64
+          --self-contained true
+          --output artifacts/HlslDecompiler-win-x64
+          /p:PublishSingleFile=true
+          /p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Create archive
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path 'artifacts/HlslDecompiler-win-x64/HlslDecompiler.exe' `
+            -DestinationPath 'artifacts/HlslDecompiler-win-x64.zip'
+
+      - name: Upload executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HlslDecompiler-win-x64
+          path: artifacts/HlslDecompiler-win-x64.zip
+          if-no-files-found: error
