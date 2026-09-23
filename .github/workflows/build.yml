@@ -34,7 +34,7 @@ jobs:
           dotnet-version: 8.x
 
       - name: Restore dependencies
-        run: dotnet restore HlslDecompiler.sln
+        run: dotnet restore HlslDecompiler.sln --runtime win-x64
 
       - name: Run tests
         run: dotnet test HlslDecompiler.sln --configuration Release --no-restore --verbosity normal
